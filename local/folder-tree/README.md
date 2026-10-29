@@ -12,11 +12,19 @@ These notes describe an **unofficial modification** of Thunderbird for Android. 
 
 - The production call builds the folder tree with `maxDepth = Int.MAX_VALUE`. This removes the practical three-level display limit while retaining the existing `maxDepth` interface for compatibility with current tests.
 - The existing `DisplayTreeFolder` model is retained. Only visible folders become independent rows in the existing `LazyColumn`.
-- Indentation is currently 8 dp per level and capped at 48 dp. This cap applies to the presentation, not the logical tree depth.
+- Indentation is currently 4 dp per level and capped at 24 dp (6 levels). This cap applies to the presentation, not the logical tree depth.
 - Subtle 1-dp vertical guides are drawn with 12% opacity along indentation steps. They were accepted after a visual check on the Android device. They are a visual aid, not connected tree branches.
 - Expansion state is managed centrally using stable keys rather than being owned only by visible UI rows. Collapsing and reopening a parent preserves its expanded descendants during the current UI session. Persistence across app restarts is **not guaranteed**.
 - Existing folder actions, unread counts, optional starred counts, and right-aligned expand/collapse controls are retained in principle.
 - The maintainer reported successful module tests, a working debug APK, and visible changes during an initial device test before the guide-line refinement. Full regression tests after adding the guides have not yet been reported. This is not a claim that the entire upstream test suite was executed.
+
+### Prototype 2: Right-aligned folder controls (device-tested)
+
+- The folder expand/collapse arrow remains on the right and is aligned with the account-header arrow.
+- Unread and optional starred-message counts are displayed to the left of the arrow, without shifting its position.
+- Empty or disabled counters reserve no extra space. The arrow retains a 48-dp touch target.
+- The existing folder actions, expansion state, 4-dp indentation and subtle vertical guides remain unchanged.
+- The maintainer confirmed the arrow alignment with and without counters on an Android device. A full regression run after this refinement has not yet been reported.
 
 ### Main implementation files
 
@@ -54,9 +62,8 @@ For the current `fossDebug` APK, some redirects derive from `BuildConfig.APPLICA
 
 ### Small UI refinements
 
-- Keep expand/collapse controls on the **right** for one-handed use. Try to align folder and account controls horizontally.
-- Do not reserve width for empty or disabled counters. Unread counts appear when `unreadCount > 0`; starred counts are optional and disabled by default.
-- The 8-dp indentation was difficult to distinguish on the tested device. **Subtle vertical guides are now part of Prototype 1**, following a successful visual evaluation. Further adjustments to indentation can be considered if needed.
+- Keep the accepted 4-dp indentation (maximum 24 dp) and the subtle vertical guides unchanged for now.
+- Additional changes to layout density should be based on device observations rather than speculative adjustments.
 
 The one-time helper `local/folder-tree/try-guides.py` was used to apply the experiment. It is not a runtime dependency and should not be run again on the already modified source file.
 
@@ -66,9 +73,8 @@ Long folder paths should preserve recognizable beginnings **and** endings, e.g. 
 
 ### Further prototypes
 
-1. **Compact folder UI:** Align the existing right-hand expand/collapse controls; do not combine them with folder icons at this stage.
-2. **Manual horizontal text navigation:** A normal horizontal drag moves all displayed names; long-press and drag moves only one. Fast swipes jump to the beginning or end. Limit drag acceleration for unusually long paths.
-3. **Automatic text movement:** After inactivity, move long names together and quickly to their respective ends, then hold position. Manual interaction always takes priority; movement speed should be configurable.
+- **Prototype 3 — Manual horizontal text navigation:** A normal horizontal drag moves all displayed names; long-press and drag moves only one. Fast swipes jump to the beginning or end. Limit drag acceleration for unusually long paths.
+- **Prototype 4 — Automatic text movement:** After inactivity, move long names together and quickly to their respective ends, then hold position. Manual interaction always takes priority; movement speed should be configurable.
 
 ## Deferred alternatives
 
