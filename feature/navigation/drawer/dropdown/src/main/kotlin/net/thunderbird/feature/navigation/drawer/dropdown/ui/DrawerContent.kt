@@ -170,6 +170,7 @@ private fun FolderContent(
                 isExpandedInitial = state.config.expandAllFolder,
                 toggledFolderKeys = state.toggledFolderKeys,
                 onFolderExpandClick = { key -> onEvent(Event.ToggleFolderExpanded(key)) },
+                onFolderExpandLongClick = { key -> onEvent(Event.ToggleFolderSubtreeExpanded(key)) },
                 rootFolder = state.rootFolder,
                 selectedFolder = state.selectedFolder,
                 onFolderClick = { folder ->

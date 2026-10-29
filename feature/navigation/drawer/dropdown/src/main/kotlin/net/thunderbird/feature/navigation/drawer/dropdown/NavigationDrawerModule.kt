@@ -1,5 +1,7 @@
 package net.thunderbird.feature.navigation.drawer.dropdown
 
+import net.thunderbird.feature.navigation.drawer.dropdown.data.FolderExpansionStore
+import net.thunderbird.feature.navigation.drawer.dropdown.data.SharedPreferencesFolderExpansionStore
 import net.thunderbird.feature.navigation.drawer.dropdown.data.UnifiedFolderRepository
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.DomainContract
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.DomainContract.UseCase
@@ -11,11 +13,15 @@ import net.thunderbird.feature.navigation.drawer.dropdown.domain.usecase.SaveDra
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.usecase.SyncAccount
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.usecase.SyncAllAccounts
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.DrawerViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val navigationDropDownDrawerModule: Module = module {
+    single<FolderExpansionStore> {
+        SharedPreferencesFolderExpansionStore(androidContext())
+    }
 
     single<DomainContract.UnifiedFolderRepository> {
         UnifiedFolderRepository(
@@ -78,6 +84,7 @@ val navigationDropDownDrawerModule: Module = module {
             getDisplayTreeFolder = get(),
             syncAccount = get(),
             syncAllAccounts = get(),
+            folderExpansionStore = get(),
         )
     }
 }

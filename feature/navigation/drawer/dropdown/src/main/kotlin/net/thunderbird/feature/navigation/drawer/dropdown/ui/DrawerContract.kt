@@ -48,6 +48,7 @@ internal interface DrawerContract {
         data class OnAccountViewClick(val account: DisplayAccount) : Event
         data class OnFolderClick(val folder: DisplayFolder) : Event
         data class ToggleFolderExpanded(val folderKey: String) : Event
+        data class ToggleFolderSubtreeExpanded(val folderKey: String) : Event
         data object OnAccountSelectorClick : Event
         data object OnSettingsClick : Event
         data object OnSyncAccount : Event

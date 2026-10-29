@@ -3,6 +3,7 @@ package net.thunderbird.feature.navigation.drawer.dropdown.ui
 import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 import net.thunderbird.core.ui.contract.mvi.BaseViewModel
 import net.thunderbird.feature.account.AccountId
 import net.thunderbird.feature.account.AccountIdFactory
+import net.thunderbird.feature.navigation.drawer.dropdown.data.FolderExpansionStore
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.DomainContract.UseCase
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.DisplayAccount
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.DisplayFolder
@@ -22,6 +24,9 @@ import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.DisplayT
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.MailDisplayAccount
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.MailDisplayFolder
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.UnifiedDisplayFolder
+import net.thunderbird.feature.navigation.drawer.dropdown.ui.folder.FolderTapSequence
+import net.thunderbird.feature.navigation.drawer.dropdown.ui.folder.expandDirectChildren
+import net.thunderbird.feature.navigation.drawer.dropdown.ui.folder.toggleFolderSubtree
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.DrawerContract.Effect
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.DrawerContract.Event
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.DrawerContract.State
@@ -42,11 +47,14 @@ internal class DrawerViewModel(
     private val getDisplayTreeFolder: UseCase.GetDisplayTreeFolder,
     private val syncAccount: UseCase.SyncAccount,
     private val syncAllAccounts: UseCase.SyncAllAccounts,
+    private val folderExpansionStore: FolderExpansionStore,
     initialState: State = State(),
 ) : BaseViewModel<State, Event, Effect>(
-    initialState = initialState,
+    initialState = initialState.copy(toggledFolderKeys = folderExpansionStore.read().toPersistentSet()),
 ),
     ViewModel {
+
+    private val folderTapSequence = FolderTapSequence()
 
     init {
         viewModelScope.launch {
@@ -161,10 +169,39 @@ internal class DrawerViewModel(
 
             is Event.OnFolderClick -> openFolder(event.folder)
 
-            is Event.ToggleFolderExpanded -> updateState { state ->
+            is Event.ToggleFolderExpanded -> {
                 val key = event.folderKey
-                val toggled = state.toggledFolderKeys
-                state.copy(toggledFolderKeys = if (key in toggled) toggled.remove(key) else toggled.add(key))
+                val current = state.value
+                val toggled = current.toggledFolderKeys
+                val wasExpanded = current.config.expandAllFolder != (key in toggled)
+                val nowMs = System.nanoTime() / 1_000_000L
+                val directChildren = if (folderTapSequence.onTap(key, wasExpanded, nowMs)) {
+                    expandDirectChildren(
+                        rootFolder = current.rootFolder,
+                        folderKey = key,
+                        initiallyExpanded = current.config.expandAllFolder,
+                        toggledFolderKeys = toggled,
+                    )
+                } else {
+                    null
+                }
+                val updated = directChildren?.toPersistentSet()
+                    ?: if (key in toggled) toggled.removing(key) else toggled.adding(key)
+                folderExpansionStore.write(updated)
+                updateState { it.copy(toggledFolderKeys = updated) }
+            }
+            is Event.ToggleFolderSubtreeExpanded -> {
+                folderTapSequence.reset()
+                val current = state.value
+                val newKeys = toggleFolderSubtree(
+                    rootFolder = current.rootFolder,
+                    folderKey = event.folderKey,
+                    initiallyExpanded = current.config.expandAllFolder,
+                    toggledFolderKeys = current.toggledFolderKeys,
+                ) ?: return
+                val updated = newKeys.toPersistentSet()
+                folderExpansionStore.write(updated)
+                updateState { it.copy(toggledFolderKeys = updated) }
             }
 
             is Event.OnAccountViewClick -> {

@@ -28,6 +28,7 @@ import net.thunderbird.feature.account.AccountIdFactory
 import net.thunderbird.feature.mail.folder.FolderType
 import net.thunderbird.feature.mail.folder.api.Folder
 import net.thunderbird.feature.navigation.drawer.api.NavigationDrawerExternalContract.DrawerConfig
+import net.thunderbird.feature.navigation.drawer.dropdown.data.FolderExpansionStore
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.DisplayFolder
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.DisplayTreeFolder
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.MailDisplayAccount
@@ -475,6 +476,33 @@ internal class DrawerViewModelTest {
         assertThat(testSubject.state.value.toggledFolderKeys).isEqualTo(persistentSetOf())
     }
 
+    @Test
+    fun `should restore individual folder expansion after view model recreation`() = runTest {
+        val folderKey = "mail:account:parent"
+        val store = FakeFolderExpansionStore()
+        val first = createTestSubject(folderExpansionStore = store)
+
+        assertThat(first.state.value.toggledFolderKeys).isEqualTo(persistentSetOf())
+        first.event(Event.ToggleFolderExpanded(folderKey))
+        assertThat(store.keys).isEqualTo(setOf(folderKey))
+
+        val restored = createTestSubject(folderExpansionStore = store)
+        assertThat(restored.state.value.toggledFolderKeys).isEqualTo(persistentSetOf(folderKey))
+
+        restored.event(Event.ToggleFolderExpanded(folderKey))
+        assertThat(store.keys).isEqualTo(emptySet())
+    }
+
+    private class FakeFolderExpansionStore(
+        var keys: Set<String> = emptySet(),
+    ) : FolderExpansionStore {
+        override fun read(): Set<String> = keys
+
+        override fun write(keys: Set<String>) {
+            this.keys = keys
+        }
+    }
+
     private fun createTestSubject(
         initialState: State = State(),
         drawerConfigFlow: Flow<DrawerConfig> = flow { emit(createDrawerConfig()) },
@@ -489,6 +517,7 @@ internal class DrawerViewModelTest {
         ),
         syncAccountFlow: Flow<Result<Unit>> = flow { emit(Result.success(Unit)) },
         syncAllAccounts: Flow<Result<Unit>> = flow { emit(Result.success(Unit)) },
+        folderExpansionStore: FolderExpansionStore = FakeFolderExpansionStore(),
     ): DrawerViewModel {
         return DrawerViewModel(
             initialState = initialState,
@@ -502,6 +531,7 @@ internal class DrawerViewModelTest {
             },
             syncAccount = { syncAccountFlow },
             syncAllAccounts = { syncAllAccounts },
+            folderExpansionStore = folderExpansionStore,
         )
     }
 

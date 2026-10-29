@@ -20,6 +20,7 @@ internal fun FolderList(
     selectedFolder: DisplayFolder?,
     onFolderClick: (DisplayFolder) -> Unit,
     onFolderExpandClick: (String) -> Unit = {},
+    onFolderExpandLongClick: (String) -> Unit = {},
     toggledFolderKeys: Set<String> = emptySet(),
     showStarredCount: Boolean,
     modifier: Modifier = Modifier,
@@ -49,11 +50,13 @@ internal fun FolderList(
                 showStarredCount = showStarredCount,
                 onClick = onFolderClick,
                 onExpandClick = { onFolderExpandClick(folderKey) },
+                onExpandLongClick = { onFolderExpandLongClick(folderKey) },
                 isExpanded = isExpandedInitial != (folderKey in toggledFolderKeys),
                 folderNameFormatter = folderNameFormatter,
                 selectedFolderId = selectedFolder?.folderId,
                 parentPrefix = row.parentPrefix,
                 indentationLevel = row.depth,
+                guideSegments = row.guideSegments,
             )
         }
     }

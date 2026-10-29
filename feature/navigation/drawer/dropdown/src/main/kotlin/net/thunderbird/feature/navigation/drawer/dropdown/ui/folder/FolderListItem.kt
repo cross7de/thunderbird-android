@@ -1,6 +1,6 @@
 package net.thunderbird.feature.navigation.drawer.dropdown.ui.folder
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,9 +44,11 @@ internal fun FolderListItem(
     modifier: Modifier = Modifier,
     isExpanded: Boolean = false,
     onExpandClick: () -> Unit = {},
+    onExpandLongClick: () -> Unit = {},
     treeFolder: DisplayTreeFolder? = null,
     parentPrefix: String? = "",
     indentationLevel: Int = 0,
+    guideSegments: List<FolderGuideSegment> = emptyList(),
 ) {
     var unreadCount = displayFolder.unreadMessageCount
     var starredCount = displayFolder.starredMessageCount
@@ -67,6 +69,7 @@ internal fun FolderListItem(
                 expandable = treeFolder?.children?.isNotEmpty() == true,
                 isExpanded = isExpanded,
                 onExpandClick = onExpandClick,
+                onExpandLongClick = onExpandLongClick,
                 badge = {
                     FolderListItemBadge(
                         unreadCount = unreadCount,
@@ -88,11 +91,27 @@ internal fun FolderListItem(
             .drawWithContent {
                 drawContent()
                 val step = guideStep.toPx()
-                repeat(guideLevel) { index ->
-                    val x = (index + 0.5f) * step
+                guideSegments.forEach { segment ->
+                    if (segment.level < MAX_INDENTATION_LEVEL) {
+                        val x = (segment.level + 0.5f) * step
+                        drawLine(
+                            color = guideColor,
+                            start = Offset(x, 0f),
+                            end = Offset(x, if (segment.endsAtCenter) size.height / 2f else size.height),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+                }
+                // Connect an expanded parent to its children from its vertical midpoint.
+                if (
+                    isExpanded &&
+                    treeFolder?.children?.isNotEmpty() == true &&
+                    guideLevel < MAX_INDENTATION_LEVEL
+                ) {
+                    val x = (guideLevel + 0.5f) * step
                     drawLine(
                         color = guideColor,
-                        start = Offset(x, 0f),
+                        start = Offset(x, size.height / 2f),
                         end = Offset(x, size.height),
                         strokeWidth = 1.dp.toPx(),
                     )
@@ -111,6 +130,7 @@ private fun NavigationDrawerLabel(
     expandable: Boolean = false,
     isExpanded: Boolean = false,
     onExpandClick: () -> Unit = {},
+    onExpandLongClick: () -> Unit = {},
 ) {
     Row(
         modifier = modifier
@@ -132,7 +152,14 @@ private fun NavigationDrawerLabel(
                         end = BoltTheme.spacings.quarter,
                     )
                     .clip(CircleShape)
-                    .clickable(onClick = onExpandClick),
+                    .combinedClickable(
+                        onClick = onExpandClick,
+                        onLongClick = onExpandLongClick,
+                        onLongClickLabel = stringResource(
+                            if (isExpanded) R.string.navigation_drawer_dropdown_collapse_subtree
+                            else R.string.navigation_drawer_dropdown_expand_subtree,
+                        ),
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 AnimatedExpandIcon(isExpanded = isExpanded)

@@ -10,4 +10,6 @@
     <string name="navigation_drawer_dropdown_action_add_account">Konto hinzufügen</string>
     <string name="navigation_drawer_dropdown_unified_account_title">Gemeinsames Konto</string>
     <string name="navigation_drawer_dropdown_action_sync_account">Konto synchronisieren</string>
+    <string name="navigation_drawer_dropdown_expand_subtree">Diesen Ordner und alle Unterordner aufklappen</string>
+    <string name="navigation_drawer_dropdown_collapse_subtree">Diesen Ordner und alle Unterordner zuklappen</string>
 </resources>
