@@ -20,13 +20,22 @@ The goal is to make deeply nested IMAP folders navigable without sacrificing the
 
 The maintainer reports successful module tests and a debug APK build for the initial folder-tree implementation. The visual guides were subsequently accepted following an on-device evaluation; full regression testing after this refinement is not yet documented. This is experimental work, not a fully validated release.
 
+**Prototype 3: Persistent folder expansion and tree navigation (device-tested)**
+
+- Individual open/closed states survive app restarts, independently for each mail account.
+- A single tap toggles one folder. A rapid second tap also expands its direct children.
+- A long press opens or closes the selected folder and all its descendants without changing other branches.
+- Subtle hierarchy guides follow visible descendant rows and finish at the midpoint of the last visible descendant.
+- Existing arrow and message-counter placement, 4-dp indentation, and the 1-dp/12%-opacity guide style are retained.
+
+These behaviors were confirmed on an Android device. The changes remain experimental and are not an official Thunderbird release.
+
 ## OAuth configuration — not yet adapted
 
 This fork still contains Thunderbird's original OAuth client IDs and provider-specific redirect settings. OAuth sign-in (including Google and Microsoft) has **not** been validated for this fork and may fail or conflict with an installed upstream app. Before distributing an independently usable build, register and configure appropriate OAuth clients and redirect URIs for the fork. Standard IMAP/SMTP connections without OAuth are separate from this limitation.
 
 ## Planned improvements
 
-- Keep the default folder expansion setting disabled and remember individual folder expansion states after app restarts (Prototype 3, pending device verification).
 - Let users inspect unusually long individual folder names without interfering with the drawer closing gesture.
 - Eventually improve long folder titles, for example `INBOX/.../parent/child`.
 

@@ -14,7 +14,7 @@ These notes describe an **unofficial modification** of Thunderbird for Android. 
 - The existing `DisplayTreeFolder` model is retained. Only visible folders become independent rows in the existing `LazyColumn`.
 - Indentation is currently 4 dp per level and capped at 24 dp (6 levels). This cap applies to the presentation, not the logical tree depth.
 - Subtle 1-dp vertical guides are drawn with 12% opacity along indentation steps. They were accepted after a visual check on the Android device. They are a visual aid, not connected tree branches.
-- Expansion state is managed centrally using stable keys rather than being owned only by visible UI rows. Collapsing and reopening a parent preserves its expanded descendants during the current UI session. Prototype 3 adds local persistence of the expansion state; device verification is pending.
+- Expansion state is managed centrally using stable keys rather than being owned only by visible UI rows. Collapsing and reopening a parent preserves its expanded descendants during the current UI session. Prototype 3 adds persistent expansion states across app restarts.
 - Existing folder actions, unread counts, optional starred counts, and right-aligned expand/collapse controls are retained in principle.
 - The maintainer reported successful module tests, a working debug APK, and visible changes during an initial device test before the guide-line refinement. Full regression tests after adding the guides have not yet been reported. This is not a claim that the entire upstream test suite was executed.
 
@@ -68,16 +68,21 @@ Long folder paths should preserve recognizable beginnings **and** endings, e.g. 
 
 The right-alignment experiment was device-tested and subsequently reverted because unread counters shifted horizontally depending on whether a folder had children. The original folder-arrow and counter layout is retained.
 
-### Prototype 3: Persistent expansion state (implemented; device test pending)
+### Prototype 3: Persistent expansion and hierarchical controls (device-tested)
 
 - With `drawerExpandAllFolder` disabled (the default), newly encountered folders start collapsed.
 - Individual open/closed states are saved locally and restored after restarting the application.
 - Folder keys include the account identity and full path, so different mail accounts retain independent states.
 - An expanded descendant remains remembered while its parent is collapsed.
 - The global "expand all folders" user preference is respected if explicitly enabled.
-- The original 4-dp indentation and subtle vertical guides remain unchanged.
+- A short tap toggles only the selected folder.
+- A second quick tap expands its immediate child folders, without explicitly changing deeper descendants.
+- A long press expands or collapses the selected folder and all of its descendants to the same target state; ancestors and unrelated branches remain unchanged.
+- Short-tap, double-tap, and long-press operations use the same persistent expansion-state storage.
+- The 4-dp indentation and the 1-dp/12%-opacity guide styling remain unchanged. The vertical guide for an expanded folder follows all currently visible descendants and ends at the midpoint of the last visible descendant (not merely its last direct child).
+- The maintainer confirmed these interactions, including state restoration after an app restart, on an Android device. A complete upstream regression suite has not been reported.
 
-Additional manual scrolling of unusually long individual folder names is deferred until the expansion-state change is tested. Global multi-row swiping was abandoned because it conflicts with the drawer's close gesture.
+Manual navigation of unusually long individual folder names remains deferred. Global multi-row swiping was abandoned because it conflicts with the drawer's close gesture.
 
 ## Deferred alternatives
 
