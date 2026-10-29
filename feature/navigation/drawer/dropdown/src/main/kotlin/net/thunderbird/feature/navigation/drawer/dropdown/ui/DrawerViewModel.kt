@@ -42,7 +42,6 @@ internal class DrawerViewModel(
     private val getDisplayTreeFolder: UseCase.GetDisplayTreeFolder,
     private val syncAccount: UseCase.SyncAccount,
     private val syncAllAccounts: UseCase.SyncAllAccounts,
-    private val maxNestingLevel: Int = 2,
     initialState: State = State(),
 ) : BaseViewModel<State, Event, Effect>(
     initialState = initialState,
@@ -99,7 +98,7 @@ internal class DrawerViewModel(
             .flatMapLatest { accountId ->
                 getDisplayFoldersForAccount(accountId)
             }.collect { folders ->
-                updateFolders(folders, getDisplayTreeFolder(folders, maxNestingLevel))
+                updateFolders(folders, getDisplayTreeFolder(folders, maxDepth = Int.MAX_VALUE))
             }
     }
 
@@ -161,6 +160,12 @@ internal class DrawerViewModel(
             is Event.OnAccountClick -> openAccount(event.account)
 
             is Event.OnFolderClick -> openFolder(event.folder)
+
+            is Event.ToggleFolderExpanded -> updateState { state ->
+                val key = event.folderKey
+                val toggled = state.toggledFolderKeys
+                state.copy(toggledFolderKeys = if (key in toggled) toggled.remove(key) else toggled.add(key))
+            }
 
             is Event.OnAccountViewClick -> {
                 openAccount(

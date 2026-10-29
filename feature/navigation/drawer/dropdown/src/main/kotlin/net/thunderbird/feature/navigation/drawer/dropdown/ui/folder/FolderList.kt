@@ -19,6 +19,8 @@ internal fun FolderList(
     rootFolder: DisplayTreeFolder,
     selectedFolder: DisplayFolder?,
     onFolderClick: (DisplayFolder) -> Unit,
+    onFolderExpandClick: (String) -> Unit = {},
+    toggledFolderKeys: Set<String> = emptySet(),
     showStarredCount: Boolean,
     modifier: Modifier = Modifier,
     isExpandedInitial: Boolean = false,
@@ -26,6 +28,9 @@ internal fun FolderList(
     val resources = LocalResources.current
     val folderNameFormatter = remember { FolderNameFormatter(resources) }
     val listState = rememberLazyListState()
+    val visibleRows = remember(rootFolder, isExpandedInitial, toggledFolderKeys) {
+        visibleFolderRows(rootFolder, isExpandedInitial, toggledFolderKeys)
+    }
 
     LazyColumn(
         state = listState,
@@ -33,20 +38,22 @@ internal fun FolderList(
         contentPadding = PaddingValues(vertical = BoltTheme.spacings.default),
     ) {
         items(
-            items = rootFolder.children,
-            key = { it.displayFolder?.folderId ?: '0' },
-        ) { folder ->
-            val currentDisplayFolder = folder.displayFolder
+            items = visibleRows,
+            key = { folderExpansionKey(requireNotNull(it.treeFolder.displayFolder)) },
+        ) { row ->
+            val folder = requireNotNull(row.treeFolder.displayFolder)
+            val folderKey = folderExpansionKey(folder)
             FolderListItem(
-                displayFolder = requireNotNull(currentDisplayFolder) {
-                    "Null DisplayFolder for folder ${folder.displayName}"
-                },
-                treeFolder = folder,
+                displayFolder = folder,
+                treeFolder = row.treeFolder,
                 showStarredCount = showStarredCount,
                 onClick = onFolderClick,
+                onExpandClick = { onFolderExpandClick(folderKey) },
+                isExpanded = isExpandedInitial != (folderKey in toggledFolderKeys),
                 folderNameFormatter = folderNameFormatter,
                 selectedFolderId = selectedFolder?.folderId,
-                isExpandInitial = isExpandedInitial,
+                parentPrefix = row.parentPrefix,
+                indentationLevel = row.depth,
             )
         }
     }

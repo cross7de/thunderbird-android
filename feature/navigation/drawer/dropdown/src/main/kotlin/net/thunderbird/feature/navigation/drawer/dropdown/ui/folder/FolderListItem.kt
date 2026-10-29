@@ -1,24 +1,22 @@
 package net.thunderbird.feature.navigation.drawer.dropdown.ui.folder
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import app.k9mail.legacy.ui.folder.FolderNameFormatter
 import net.thunderbird.components.ui.bolt.atom.icon.Icon
 import net.thunderbird.components.ui.bolt.atom.icon.Icons
@@ -34,6 +32,8 @@ import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.UnifiedD
 import net.thunderbird.feature.navigation.drawer.dropdown.domain.entity.UnifiedDisplayFolderType
 import net.thunderbird.feature.navigation.drawer.dropdown.ui.common.AnimatedExpandIcon
 
+private const val MAX_INDENTATION_LEVEL = 6
+
 @Composable
 internal fun FolderListItem(
     displayFolder: DisplayFolder,
@@ -42,73 +42,65 @@ internal fun FolderListItem(
     folderNameFormatter: FolderNameFormatter,
     selectedFolderId: String?,
     modifier: Modifier = Modifier,
-    isExpandInitial: Boolean = false,
+    isExpanded: Boolean = false,
+    onExpandClick: () -> Unit = {},
     treeFolder: DisplayTreeFolder? = null,
     parentPrefix: String? = "",
-    indentationLevel: Int = 1,
+    indentationLevel: Int = 0,
 ) {
-    val isExpanded = rememberSaveable(isExpandInitial) { mutableStateOf(isExpandInitial) }
-
     var unreadCount = displayFolder.unreadMessageCount
     var starredCount = displayFolder.starredMessageCount
 
-    if (treeFolder !== null && !isExpanded.value) {
+    if (treeFolder !== null && !isExpanded) {
         unreadCount = treeFolder.totalUnreadCount
         starredCount = treeFolder.totalStarredCount
     }
 
-    Column(
+    val guideLevel = indentationLevel.coerceAtMost(MAX_INDENTATION_LEVEL)
+    val guideStep = BoltTheme.spacings.half
+    val guideColor = BoltTheme.colors.onSurfaceVariant.copy(alpha = 0.12f)
+
+    NavigationDrawerItem(
+        label = {
+            NavigationDrawerLabel(
+                label = mapFolderName(displayFolder, folderNameFormatter, parentPrefix),
+                expandable = treeFolder?.children?.isNotEmpty() == true,
+                isExpanded = isExpanded,
+                onExpandClick = onExpandClick,
+                badge = {
+                    FolderListItemBadge(
+                        unreadCount = unreadCount,
+                        starredCount = starredCount,
+                        showStarredCount = showStarredCount,
+                    )
+                },
+            )
+        },
+        selected = selectedFolderId == displayFolder.folderId,
+        onClick = {
+            when (displayFolder) {
+                is MailDisplayFolder if displayFolder.isPlaceholder -> onExpandClick()
+                else -> onClick(displayFolder)
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
-            .animateContentSize(),
-    ) {
-        NavigationDrawerItem(
-            label = {
-                NavigationDrawerLabel(
-                    label = mapFolderName(displayFolder, folderNameFormatter, parentPrefix),
-                    expandableState = if (treeFolder !== null && treeFolder.children.isNotEmpty()) isExpanded else null,
-                    badge = {
-                        FolderListItemBadge(
-                            unreadCount = unreadCount,
-                            starredCount = starredCount,
-                            showStarredCount = showStarredCount,
-                        )
-                    },
-                )
-            },
-            selected = selectedFolderId == displayFolder.folderId,
-            onClick = {
-                when (displayFolder) {
-                    is MailDisplayFolder if displayFolder.isPlaceholder -> isExpanded.value = !isExpanded.value
-                    else -> onClick(displayFolder)
+            .drawWithContent {
+                drawContent()
+                val step = guideStep.toPx()
+                repeat(guideLevel) { index ->
+                    val x = (index + 0.5f) * step
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(x, 0f),
+                        end = Offset(x, size.height),
+                        strokeWidth = 1.dp.toPx(),
+                    )
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            icon = { Icon(imageVector = mapFolderIcon(displayFolder)) },
-        )
-
-        // Managing children
-        if (!isExpanded.value) return
-        if (treeFolder === null) return
-        for (child in treeFolder.children) {
-            val displayParent = treeFolder.displayFolder
-            val displayChild = child.displayFolder
-            if (displayChild == null) continue
-            FolderListItem(
-                displayFolder = displayChild,
-                selectedFolderId = selectedFolderId,
-                showStarredCount = showStarredCount,
-                onClick = onClick,
-                folderNameFormatter = folderNameFormatter,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = BoltTheme.spacings.double * indentationLevel),
-                treeFolder = child,
-                parentPrefix = if (displayParent is MailDisplayFolder) displayParent.folder.name else null,
-                indentationLevel = indentationLevel + 1,
-            )
-        }
-    }
+            }
+            .padding(start = guideStep * guideLevel),
+        icon = { Icon(imageVector = mapFolderIcon(displayFolder)) },
+    )
 }
 
 @Composable
@@ -116,7 +108,9 @@ private fun NavigationDrawerLabel(
     label: String,
     badge: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    expandableState: MutableState<Boolean>? = null,
+    expandable: Boolean = false,
+    isExpanded: Boolean = false,
+    onExpandClick: () -> Unit = {},
 ) {
     Row(
         modifier = modifier
@@ -129,7 +123,7 @@ private fun NavigationDrawerLabel(
             maxLines = 2,
             modifier = Modifier.weight(1f),
         )
-        if (expandableState?.value != null) {
+        if (expandable) {
             Box(
                 modifier = Modifier
                     .size(BoltTheme.sizes.iconAvatar)
@@ -138,12 +132,10 @@ private fun NavigationDrawerLabel(
                         end = BoltTheme.spacings.quarter,
                     )
                     .clip(CircleShape)
-                    .clickable(onClick = { expandableState.value = !expandableState.value }),
+                    .clickable(onClick = onExpandClick),
                 contentAlignment = Alignment.Center,
             ) {
-                AnimatedExpandIcon(
-                    isExpanded = expandableState.value,
-                )
+                AnimatedExpandIcon(isExpanded = isExpanded)
             }
         }
         badge()

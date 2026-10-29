@@ -168,6 +168,8 @@ private fun FolderContent(
         ) {
             FolderList(
                 isExpandedInitial = state.config.expandAllFolder,
+                toggledFolderKeys = state.toggledFolderKeys,
+                onFolderExpandClick = { key -> onEvent(Event.ToggleFolderExpanded(key)) },
                 rootFolder = state.rootFolder,
                 selectedFolder = state.selectedFolder,
                 onFolderClick = { folder ->

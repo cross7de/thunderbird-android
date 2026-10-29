@@ -11,6 +11,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -460,6 +461,18 @@ internal class DrawerViewModelTest {
         turbines.assertThatAndEffectTurbineConsumed {
             isEqualTo(Effect.OpenSettings)
         }
+    }
+
+    @Test
+    fun `should retain expansion toggle state independently of visible rows`() = runTest {
+        val testSubject = createTestSubject()
+        val folderKey = "mail:account:folder"
+
+        testSubject.event(Event.ToggleFolderExpanded(folderKey))
+        assertThat(testSubject.state.value.toggledFolderKeys).isEqualTo(persistentSetOf(folderKey))
+
+        testSubject.event(Event.ToggleFolderExpanded(folderKey))
+        assertThat(testSubject.state.value.toggledFolderKeys).isEqualTo(persistentSetOf())
     }
 
     private fun createTestSubject(

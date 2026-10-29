@@ -440,6 +440,26 @@ class GetDisplayTreeFolderTest {
         assertThat(result).isEqualTo(expected)
     }
 
+    @Test
+    fun `should preserve every level of a deeply nested folder`() {
+        val segments = (1..30).map { "level$it" }
+        val folder = createDisplayAccountFolder(
+            folderId = 99,
+            folderName = segments.joinToString("/"),
+            unreadMessageCount = 1,
+            starredMessageCount = 0,
+        )
+        val result = GetDisplayTreeFolder(logger = TestLogger())(listOf(folder), maxDepth = Int.MAX_VALUE)
+
+        var current = result
+        segments.forEach { segment ->
+            current = current.children.single()
+            assertThat(current.displayName).isEqualTo(segment)
+        }
+        assertThat(current.displayFolder).isEqualTo(folder)
+        assertThat(current.children.size).isEqualTo(0)
+    }
+
     private companion object {
         val ACCOUNT_ID = AccountIdFactory.create()
 

@@ -2,7 +2,9 @@ package net.thunderbird.feature.navigation.drawer.dropdown.ui
 
 import androidx.compose.runtime.Stable
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import net.thunderbird.core.ui.contract.mvi.UnidirectionalViewModel
 import net.thunderbird.feature.account.AccountId
 import net.thunderbird.feature.navigation.drawer.api.NavigationDrawerExternalContract.DrawerConfig
@@ -36,6 +38,7 @@ internal interface DrawerContract {
         val selectedFolder: DisplayFolder? = null,
         val showAccountSelection: Boolean = false,
         val isLoading: Boolean = false,
+        val toggledFolderKeys: PersistentSet<String> = persistentSetOf(),
     )
 
     sealed interface Event {
@@ -44,6 +47,7 @@ internal interface DrawerContract {
         data class OnAccountClick(val account: DisplayAccount) : Event
         data class OnAccountViewClick(val account: DisplayAccount) : Event
         data class OnFolderClick(val folder: DisplayFolder) : Event
+        data class ToggleFolderExpanded(val folderKey: String) : Event
         data object OnAccountSelectorClick : Event
         data object OnSettingsClick : Event
         data object OnSyncAccount : Event
