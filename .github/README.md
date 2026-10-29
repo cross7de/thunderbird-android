@@ -20,23 +20,17 @@ The goal is to make deeply nested IMAP folders navigable without sacrificing the
 
 The maintainer reports successful module tests and a debug APK build for the initial folder-tree implementation. The visual guides were subsequently accepted following an on-device evaluation; full regression testing after this refinement is not yet documented. This is experimental work, not a fully validated release.
 
-**Prototype 2: Right-aligned folder controls (device-tested)**
-
-- The folder expand/collapse controls remain on the right, aligned with the account-header arrow.
-- Unread and optional starred-message counts appear before the folder arrow, without shifting it.
-- Empty or disabled counters do not reserve extra space.
-
-The maintainer confirmed the arrow alignment on an Android device with and without message counters. A full regression test run for this change is not yet documented.
-
 ## OAuth configuration — not yet adapted
 
 This fork still contains Thunderbird's original OAuth client IDs and provider-specific redirect settings. OAuth sign-in (including Google and Microsoft) has **not** been validated for this fork and may fail or conflict with an installed upstream app. Before distributing an independently usable build, register and configure appropriate OAuth clients and redirect URIs for the fork. Standard IMAP/SMTP connections without OAuth are separate from this limitation.
 
 ## Planned improvements
 
-- Support horizontal navigation of long folder names, including direct access to their ends.
-- Optionally animate long names after a period of inactivity, with manual input always taking priority.
+- Keep the default folder expansion setting disabled and remember individual folder expansion states after app restarts (Prototype 3, pending device verification).
+- Let users inspect unusually long individual folder names without interfering with the drawer closing gesture.
 - Eventually improve long folder titles, for example `INBOX/.../parent/child`.
+
+The original expand/collapse control layout is retained. An earlier arrow-alignment experiment was reverted because it made unread counters jump between positions.
 
 These improvements are **not yet implemented** unless stated otherwise in the [technical notes](../local/folder-tree/README.md).
 

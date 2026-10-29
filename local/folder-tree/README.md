@@ -18,14 +18,6 @@ These notes describe an **unofficial modification** of Thunderbird for Android. 
 - Existing folder actions, unread counts, optional starred counts, and right-aligned expand/collapse controls are retained in principle.
 - The maintainer reported successful module tests, a working debug APK, and visible changes during an initial device test before the guide-line refinement. Full regression tests after adding the guides have not yet been reported. This is not a claim that the entire upstream test suite was executed.
 
-### Prototype 2: Right-aligned folder controls (device-tested)
-
-- The folder expand/collapse arrow remains on the right and is aligned with the account-header arrow.
-- Unread and optional starred-message counts are displayed to the left of the arrow, without shifting its position.
-- Empty or disabled counters reserve no extra space. The arrow retains a 48-dp touch target.
-- The existing folder actions, expansion state, 4-dp indentation and subtle vertical guides remain unchanged.
-- The maintainer confirmed the arrow alignment with and without counters on an Android device. A full regression run after this refinement has not yet been reported.
-
 ### Main implementation files
 
 - `feature/navigation/drawer/dropdown/src/main/kotlin/net/thunderbird/feature/navigation/drawer/dropdown/ui/DrawerViewModel.kt`
@@ -62,8 +54,9 @@ For the current `fossDebug` APK, some redirects derive from `BuildConfig.APPLICA
 
 ### Small UI refinements
 
-- Keep the accepted 4-dp indentation (maximum 24 dp) and the subtle vertical guides unchanged for now.
-- Additional changes to layout density should be based on device observations rather than speculative adjustments.
+- Retain the original right-hand expand/collapse controls and the original message-count placement.
+- Do not reserve width for empty or disabled counters. Unread counts appear when `unreadCount > 0`; starred counts are optional and disabled by default.
+- Keep the accepted 4-dp indentation (maximum 24 dp) and the subtle vertical guides unchanged.
 
 The one-time helper `local/folder-tree/try-guides.py` was used to apply the experiment. It is not a runtime dependency and should not be run again on the already modified source file.
 
@@ -71,10 +64,20 @@ The one-time helper `local/folder-tree/try-guides.py` was used to apply the expe
 
 Long folder paths should preserve recognizable beginnings **and** endings, e.g. `INBOX/.../parent/child`, instead of simply hiding the beginning. Future horizontal text navigation should work in the title bar as well.
 
-### Further prototypes
+### Prototype 2: Reverted
 
-- **Prototype 3 — Manual horizontal text navigation:** A normal horizontal drag moves all displayed names; long-press and drag moves only one. Fast swipes jump to the beginning or end. Limit drag acceleration for unusually long paths.
-- **Prototype 4 — Automatic text movement:** After inactivity, move long names together and quickly to their respective ends, then hold position. Manual interaction always takes priority; movement speed should be configurable.
+The right-alignment experiment was device-tested and subsequently reverted because unread counters shifted horizontally depending on whether a folder had children. The original folder-arrow and counter layout is retained.
+
+### Prototype 3: Persistent expansion state (planned)
+
+- With `drawerExpandAllFolder` disabled (the default), newly encountered folders start collapsed.
+- Individual open/closed states are saved locally and restored after restarting the application.
+- Folder keys include the account identity and full path, so different mail accounts retain independent states.
+- An expanded descendant remains remembered while its parent is collapsed.
+- The global "expand all folders" user preference is respected if explicitly enabled.
+- The original 4-dp indentation and subtle vertical guides remain unchanged.
+
+Additional manual scrolling of unusually long individual folder names is deferred until the expansion-state change is tested. Global multi-row swiping was abandoned because it conflicts with the drawer's close gesture.
 
 ## Deferred alternatives
 

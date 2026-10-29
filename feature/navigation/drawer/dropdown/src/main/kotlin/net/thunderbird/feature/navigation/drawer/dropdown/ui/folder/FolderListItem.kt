@@ -3,11 +3,9 @@ package net.thunderbird.feature.navigation.drawer.dropdown.ui.folder
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -62,9 +60,29 @@ internal fun FolderListItem(
     val guideStep = BoltTheme.spacings.half
     val guideColor = BoltTheme.colors.onSurfaceVariant.copy(alpha = 0.12f)
 
-    val expandable = treeFolder?.children?.isNotEmpty() == true
-
-    Box(
+    NavigationDrawerItem(
+        label = {
+            NavigationDrawerLabel(
+                label = mapFolderName(displayFolder, folderNameFormatter, parentPrefix),
+                expandable = treeFolder?.children?.isNotEmpty() == true,
+                isExpanded = isExpanded,
+                onExpandClick = onExpandClick,
+                badge = {
+                    FolderListItemBadge(
+                        unreadCount = unreadCount,
+                        starredCount = starredCount,
+                        showStarredCount = showStarredCount,
+                    )
+                },
+            )
+        },
+        selected = selectedFolderId == displayFolder.folderId,
+        onClick = {
+            when (displayFolder) {
+                is MailDisplayFolder if displayFolder.isPlaceholder -> onExpandClick()
+                else -> onClick(displayFolder)
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
             .drawWithContent {
@@ -81,46 +99,8 @@ internal fun FolderListItem(
                 }
             }
             .padding(start = guideStep * guideLevel),
-    ) {
-        NavigationDrawerItem(
-            label = {
-                NavigationDrawerLabel(
-                    label = mapFolderName(displayFolder, folderNameFormatter, parentPrefix),
-                    expandable = expandable,
-                    badge = {
-                        FolderListItemBadge(
-                            unreadCount = unreadCount,
-                            starredCount = starredCount,
-                            showStarredCount = showStarredCount,
-                        )
-                    },
-                )
-            },
-            selected = selectedFolderId == displayFolder.folderId,
-            onClick = {
-                when (displayFolder) {
-                    is MailDisplayFolder if displayFolder.isPlaceholder -> onExpandClick()
-                    else -> onClick(displayFolder)
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            icon = { Icon(imageVector = mapFolderIcon(displayFolder)) },
-        )
-        if (expandable) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    // Account arrow: 16 dp outer + 16 dp inner + 12 dp icon center.
-                    .padding(end = BoltTheme.spacings.double + BoltTheme.spacings.half)
-                    .size(BoltTheme.sizes.iconAvatar)
-                    .clip(CircleShape)
-                    .clickable(onClick = onExpandClick),
-                contentAlignment = Alignment.Center,
-            ) {
-                AnimatedExpandIcon(isExpanded = isExpanded)
-            }
-        }
-    }
+        icon = { Icon(imageVector = mapFolderIcon(displayFolder)) },
+    )
 }
 
 @Composable
@@ -129,6 +109,8 @@ private fun NavigationDrawerLabel(
     badge: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     expandable: Boolean = false,
+    isExpanded: Boolean = false,
+    onExpandClick: () -> Unit = {},
 ) {
     Row(
         modifier = modifier
@@ -141,11 +123,22 @@ private fun NavigationDrawerLabel(
             maxLines = 2,
             modifier = Modifier.weight(1f),
         )
-        badge()
         if (expandable) {
-            // Reserve the arrow lane after the counters, not before them.
-            Spacer(modifier = Modifier.width(BoltTheme.sizes.iconAvatar))
+            Box(
+                modifier = Modifier
+                    .size(BoltTheme.sizes.iconAvatar)
+                    .padding(
+                        start = BoltTheme.spacings.quarter,
+                        end = BoltTheme.spacings.quarter,
+                    )
+                    .clip(CircleShape)
+                    .clickable(onClick = onExpandClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                AnimatedExpandIcon(isExpanded = isExpanded)
+            }
         }
+        badge()
     }
 }
 
