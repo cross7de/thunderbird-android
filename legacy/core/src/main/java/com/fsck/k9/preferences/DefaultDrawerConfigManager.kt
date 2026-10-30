@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import net.thunderbird.core.preference.display.inboxSettings.DisplayInboxSettingsPreferenceManager
 import net.thunderbird.core.preference.display.visualSettings.DisplayVisualSettingsPreferenceManager
@@ -16,24 +16,26 @@ internal class DefaultDrawerConfigManager(
     private val displayInboxSettingsPreferenceManager: DisplayInboxSettingsPreferenceManager,
     private val displayVisualSettingsPreferenceManager: DisplayVisualSettingsPreferenceManager,
 ) : DrawerConfigManager {
-    private val drawerConfig: StateFlow<DrawerConfig> = flow {
-        emit(
-            DrawerConfig(
-                showStarredCount = displayInboxSettingsPreferenceManager.getConfig().isShowStarredCount,
-                showUnifiedFolders = displayInboxSettingsPreferenceManager.getConfig().isShowUnifiedInbox,
-                expandAllFolder = displayVisualSettingsPreferenceManager.getConfig().drawerExpandAllFolder,
-            ),
+    private val drawerConfig: StateFlow<DrawerConfig> = combine(
+        displayInboxSettingsPreferenceManager.getConfigFlow(),
+        displayVisualSettingsPreferenceManager.getConfigFlow(),
+    ) { inbox, visual ->
+        DrawerConfig(
+            showStarredCount = inbox.isShowStarredCount,
+            showUnifiedFolders = inbox.isShowUnifiedInbox,
+            expandAllFolder = visual.drawerExpandAllFolder,
         )
-    }
-        .stateIn(
-            scope = coroutineScope,
-            started = SharingStarted.WhileSubscribed(),
-            initialValue = DrawerConfig(
-                showStarredCount = false,
-                showUnifiedFolders = false,
-                expandAllFolder = false,
-            ),
-        )
+    }.stateIn(
+        scope = coroutineScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = currentConfig(),
+    )
+
+    private fun currentConfig() = DrawerConfig(
+        showStarredCount = displayInboxSettingsPreferenceManager.getConfig().isShowStarredCount,
+        showUnifiedFolders = displayInboxSettingsPreferenceManager.getConfig().isShowUnifiedInbox,
+        expandAllFolder = displayVisualSettingsPreferenceManager.getConfig().drawerExpandAllFolder,
+    )
 
     override fun save(config: DrawerConfig) {
         displayInboxSettingsPreferenceManager.update {
@@ -49,7 +51,7 @@ internal class DefaultDrawerConfigManager(
 
     @Synchronized
     override fun getConfig(): DrawerConfig {
-        return drawerConfig.value
+        return currentConfig()
     }
 
     override fun getConfigFlow(): Flow<DrawerConfig> {

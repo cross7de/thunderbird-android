@@ -59,8 +59,10 @@ internal class DrawerViewModel(
     init {
         viewModelScope.launch {
             getDrawerConfig().collectLatest { config ->
+                // Stored keys invert the global default. Never reuse them under a different default.
+                val expansionKeys = folderExpansionStore.readForDefault(config.expandAllFolder)
                 updateState {
-                    it.copy(config = config)
+                    it.copy(config = config, toggledFolderKeys = expansionKeys.toPersistentSet())
                 }
             }
         }

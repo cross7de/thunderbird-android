@@ -493,10 +493,48 @@ internal class DrawerViewModelTest {
         assertThat(store.keys).isEqualTo(emptySet())
     }
 
+    @Test
+    fun `changing global expand all resets previously inverted expansion overrides`() = runTest {
+        val drawerConfigFlow = MutableStateFlow(createDrawerConfig(expandAllFolder = true))
+        val store = FakeFolderExpansionStore()
+        val viewModel = createTestSubject(drawerConfigFlow = drawerConfigFlow, folderExpansionStore = store)
+        advanceUntilIdle()
+
+        val folderKey = "mail:account:folder"
+        viewModel.event(Event.ToggleFolderExpanded(folderKey))
+        assertThat(store.keys).isEqualTo(setOf(folderKey))
+
+        drawerConfigFlow.emit(createDrawerConfig(expandAllFolder = false))
+        advanceUntilIdle()
+
+        assertThat(viewModel.state.value.config.expandAllFolder).isEqualTo(false)
+        assertThat(viewModel.state.value.toggledFolderKeys).isEqualTo(persistentSetOf())
+        assertThat(store.keys).isEqualTo(emptySet())
+    }
+
+    @Test
+    fun `legacy expansion keys are cleared once when no default has been stored`() = runTest {
+        val store = FakeFolderExpansionStore(keys = setOf("mail:account:old"))
+        val viewModel = createTestSubject(folderExpansionStore = store)
+        advanceUntilIdle()
+
+        assertThat(viewModel.state.value.toggledFolderKeys).isEqualTo(persistentSetOf())
+        assertThat(store.keys).isEqualTo(emptySet())
+    }
+
     private class FakeFolderExpansionStore(
         var keys: Set<String> = emptySet(),
+        private var previousDefault: Boolean? = null,
     ) : FolderExpansionStore {
         override fun read(): Set<String> = keys
+
+        override fun readForDefault(expandAllFolder: Boolean): Set<String> {
+            if (previousDefault != expandAllFolder) {
+                keys = emptySet()
+                previousDefault = expandAllFolder
+            }
+            return keys
+        }
 
         override fun write(keys: Set<String>) {
             this.keys = keys
