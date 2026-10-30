@@ -1,15 +1,15 @@
 package app.k9mail.feature.widget.message.list
 
 import android.content.Context
+import android.content.Intent
+import android.view.View
 import android.graphics.Typeface
 import android.text.SpannableString
 import android.text.style.StyleSpan
-import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService.RemoteViewsFactory
 import androidx.core.content.ContextCompat
 import com.fsck.k9.CoreResourceProvider
-import com.fsck.k9.activity.MessageHomeActivity
 import net.thunderbird.core.android.account.SortType
 import net.thunderbird.core.preference.GeneralSettingsManager
 import net.thunderbird.feature.search.legacy.LocalMessageSearch
@@ -18,7 +18,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 @Suppress("TooManyFunctions")
-internal class MessageListRemoteViewFactory(private val context: Context) : RemoteViewsFactory, KoinComponent {
+internal class MessageListRemoteViewFactory(
+    private val context: Context,
+    private val appWidgetId: Int,
+) : RemoteViewsFactory, KoinComponent {
     private val messageListLoader: MessageListLoader by inject()
     private val coreResourceProvider: CoreResourceProvider by inject()
     private val generalSettingsManager: GeneralSettingsManager by inject()
@@ -82,29 +85,27 @@ internal class MessageListRemoteViewFactory(private val context: Context) : Remo
         }
 
         remoteView.setTextViewText(R.id.mail_date, item.displayDate)
-        remoteView.setTextViewText(R.id.mail_preview, item.preview)
-
-        if (item.threadCount > 1) {
-            remoteView.setTextViewText(R.id.thread_count, item.threadCount.toString())
-            remoteView.setInt(R.id.thread_count, "setVisibility", View.VISIBLE)
-        } else {
-            remoteView.setInt(R.id.thread_count, "setVisibility", View.GONE)
-        }
 
         val textColor = getTextColor(item)
         remoteView.setTextColor(R.id.sender, textColor)
         remoteView.setTextColor(R.id.mail_subject, textColor)
         remoteView.setTextColor(R.id.mail_date, textColor)
-        remoteView.setTextColor(R.id.mail_preview, textColor)
 
-        if (item.hasAttachments) {
-            remoteView.setInt(R.id.attachment, "setVisibility", View.VISIBLE)
-        } else {
-            remoteView.setInt(R.id.attachment, "setVisibility", View.GONE)
+        val reference = item.messageReference.toIdentityString()
+        remoteView.setOnClickFillInIntent(R.id.mail_list_item, Intent().apply {
+            action = MessageListWidgetActions.ACTION_OPEN_MESSAGE
+            putExtra(MessageListWidgetActions.EXTRA_MESSAGE_REFERENCE, reference)
+        })
+
+        val deleteMode = MessageListWidgetActions.isDeleteMode(context, appWidgetId)
+        remoteView.setViewVisibility(R.id.mail_date, if (deleteMode) View.GONE else View.VISIBLE)
+        remoteView.setViewVisibility(R.id.delete_item, if (deleteMode) View.VISIBLE else View.GONE)
+        if (deleteMode) {
+            remoteView.setOnClickFillInIntent(R.id.delete_item, Intent().apply {
+                action = MessageListWidgetActions.ACTION_DELETE_MESSAGE
+                putExtra(MessageListWidgetActions.EXTRA_MESSAGE_REFERENCE, reference)
+            })
         }
-
-        val intent = MessageHomeActivity.actionDisplayMessageTemplateFillIntent(item.messageReference)
-        remoteView.setOnClickFillInIntent(R.id.mail_list_item, intent)
 
         remoteView.setInt(R.id.chip, "setBackgroundColor", item.accountColor)
 

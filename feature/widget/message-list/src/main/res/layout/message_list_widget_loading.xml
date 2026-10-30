@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@android:color/white"
     android:gravity="center"
-    android:padding="16dp"
+    android:padding="3dp"
     android:text="@string/message_list_widget_initializing"
-    android:textSize="18sp"
+    android:textSize="11sp"
     />

@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
 
+        <activity
+            android:name=".MessageListWidgetActionActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoDisplay"
+            />
+
         <service
             android:name=".MessageListWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"

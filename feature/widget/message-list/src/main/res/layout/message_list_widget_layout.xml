@@ -1,6 +1,5 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -15,28 +14,69 @@
         android:orientation="horizontal"
         >
 
+        <ImageButton
+            android:id="@+id/sync_mail"
+            android:layout_width="40dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/message_list_widget_sync_action"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_popup_sync"
+            />
+
         <TextView
-            android:id="@+id/folder"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="1dp"
             android:layout_weight="1"
-            android:paddingBottom="12dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
-            android:paddingTop="12dp"
-            android:textSize="20sp"
-            android:textColor="@color/message_list_widget_header_text"
-            tools:text="Unified Inbox"
+            />
+
+        <ImageButton
+            android:id="@+id/open_inbox"
+            android:layout_width="40dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/message_list_widget_inbox_title"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_dialog_email"
+            android:visibility="gone"
+            />
+
+        <TextView
+            android:id="@+id/extra_actions_spacer"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:visibility="gone"
             />
 
         <ImageButton
             android:id="@+id/new_message"
-            android:layout_width="56dp"
-            android:layout_height="match_parent"
+            android:layout_width="40dp"
+            android:layout_height="28dp"
             android:background="?android:attr/selectableItemBackground"
             android:contentDescription="@string/message_list_widget_compose_action"
-            android:scaleType="center"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
             android:src="@drawable/ic_edit"
+            />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            />
+
+        <ImageButton
+            android:id="@+id/toggle_delete"
+            android:layout_width="40dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/message_list_widget_delete_mode_action"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_delete"
             />
 
     </LinearLayout>
@@ -44,7 +84,8 @@
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="?android:attr/colorBackground"
         android:divider="@color/message_list_widget_divider"
         android:dividerHeight="0.5dp"

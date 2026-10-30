@@ -58,13 +58,16 @@ internal class MessageListItemMapper(
         )
     }
 
-    @Suppress("ImplicitDefaultLocale")
     private fun formatDate(date: Long): String {
         calendar.timeInMillis = date
-        val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-        val month = calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.getDefault())
-
-        return String.format("%d %s", dayOfMonth, month)
+        return String.format(
+            Locale.getDefault(),
+            "%02d.%02d.\n%02d:%02d",
+            calendar.get(Calendar.DAY_OF_MONTH),
+            calendar.get(Calendar.MONTH) + 1,
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+        )
     }
 
     private fun createUniqueId(account: LegacyAccount, messageId: Long): Long {
