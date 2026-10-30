@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.RecyclerView
 import app.k9mail.core.ui.legacy.designsystem.atom.icon.Icons
@@ -18,7 +19,6 @@ import com.fsck.k9.ui.R
 import com.fsck.k9.ui.base.BaseActivity
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.adapters.ItemAdapter
-import java.util.Locale
 import net.thunderbird.feature.account.AccountId
 import net.thunderbird.feature.account.AccountIdFactory
 import net.thunderbird.feature.mail.folder.FolderType
@@ -40,6 +40,9 @@ class ChooseFolderActivity : BaseActivity() {
     private var currentFolderId: Long? = null
     private var scrollToFolderId: Long? = null
     private var messageReference: String? = null
+    private var folderTree: List<ChooseFolderNode> = emptyList()
+    private val expandedPaths = mutableSetOf<String>()
+    private var searchQuery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,11 +80,15 @@ class ChooseFolderActivity : BaseActivity() {
 
         messageReference = intent.getStringExtra(EXTRA_MESSAGE_REFERENCE)
         currentFolderId = intent.getLongExtraOrNull(EXTRA_CURRENT_FOLDER_ID)
+        savedInstanceState?.getStringArrayList(STATE_EXPANDED_PATHS)?.let(expandedPaths::addAll)
+        searchQuery = savedInstanceState?.getString(STATE_SEARCH_QUERY).orEmpty()
 
+        // Begin in the message's source folder, not in the last used destination.
+        // When the source folder is unknown (e.g. a unified view), keep the old fallback.
         scrollToFolderId = if (savedInstanceState != null) {
             savedInstanceState.getLongOrNull(STATE_SCROLL_TO_FOLDER_ID)
         } else {
-            intent.getLongExtraOrNull(EXTRA_SCROLL_TO_FOLDER_ID)
+            currentFolderId ?: intent.getLongExtraOrNull(EXTRA_SCROLL_TO_FOLDER_ID)
         }
 
         return true
@@ -95,12 +102,15 @@ class ChooseFolderActivity : BaseActivity() {
 
     private fun initializeFolderList() {
         itemAdapter = ItemAdapter()
-        itemAdapter.itemFilter.filterPredicate = ::folderListFilter
 
         val folderListAdapter = FastAdapter.with(itemAdapter).apply {
             setHasStableIds(true)
             onClickListener = { _, _, item: FolderListItem, _ ->
-                returnResult(item.databaseId, item.displayName)
+                when (chooseFolderRowAction(item.hasChildren, item.canSelectDestination, searchQuery.isNotBlank())) {
+                    ChooseFolderRowAction.EXPAND -> toggleFolder(item.path)
+                    ChooseFolderRowAction.SELECT -> confirmDestination(item)
+                    ChooseFolderRowAction.NONE -> Unit
+                }
                 true
             }
         }
@@ -110,38 +120,67 @@ class ChooseFolderActivity : BaseActivity() {
     }
 
     private fun updateFolderList(displayFolders: List<DisplayFolder>) {
-        val folderListItems = displayFolders.asSequence()
-            .filterNot { it.folder.type == FolderType.OUTBOX }
-            .filterNot { it.folder.id == currentFolderId }
-            .map { displayFolder ->
-                val databaseId = displayFolder.folder.id
-                val folderIconResource = folderIconProvider.getFolderIcon(displayFolder.folder.type)
-                val displayName = folderNameFormatter.displayName(displayFolder.folder)
+        folderTree = buildChooseFolderHierarchy(displayFolders) { folder ->
+            folderNameFormatter.displayName(folder.folder)
+        }
 
-                FolderListItem(databaseId, folderIconResource, displayName)
+        // Reveal the initial folder's ancestors. For the source folder also expand its
+        // own children so that navigation can continue immediately from there.
+        scrollToFolderId?.let { targetId ->
+            findChooseFolderNode(folderTree, targetId)?.let { node ->
+                expandedPaths.addAll(node.ancestors)
+                if (targetId == currentFolderId) expandedPaths.add(node.path)
             }
-            .toList()
+        }
+        renderFolderList()
+    }
+
+    private fun renderFolderList() {
+        val searching = searchQuery.isNotBlank()
+        val rows = visibleChooseFolderNodes(folderTree, expandedPaths, searchQuery)
+        val folderListItems = rows.map { (node, depth) ->
+            val folder = node.folder
+            val databaseId = folder?.folder?.id
+            FolderListItem(
+                databaseId = databaseId,
+                folderIconResource = folderIconProvider.getFolderIcon(folder?.folder?.type ?: FolderType.REGULAR),
+                displayName = folder?.let { folderNameFormatter.displayName(it.folder) } ?: node.path,
+                label = node.label,
+                path = node.path,
+                depth = depth,
+                hasChildren = node.children.isNotEmpty(),
+                showExpansionButton = !searching && node.children.isNotEmpty(),
+                isExpanded = node.path in expandedPaths,
+                canSelectDestination = databaseId != null && databaseId != currentFolderId,
+                onToggleExpansion = ::toggleFolder,
+                onSelectDestination = ::confirmDestination,
+            )
+        }
 
         itemAdapter.set(folderListItems)
-
         scrollToFolder(folderListItems)
     }
 
-    private fun scrollToFolder(folders: List<FolderListItem>) {
-        if (scrollToFolderId == null) return
+    private fun toggleFolder(path: String) {
+        if (!expandedPaths.add(path)) expandedPaths.remove(path)
+        renderFolderList()
+    }
 
-        val index = folders.indexOfFirst { it.databaseId == scrollToFolderId }
+    private fun scrollToFolder(folders: List<FolderListItem>) {
+        val target = scrollToFolderId ?: return
+        val index = folders.indexOfFirst { it.databaseId == target }
         if (index != -1) {
             recyclerView.scrollToPosition(index)
+            scrollToFolderId = null
         }
-
-        scrollToFolderId = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         scrollToFolderId?.let { folderId -> outState.putLong(STATE_SCROLL_TO_FOLDER_ID, folderId) }
         outState.putBoolean(STATE_SHOW_HIDDEN_FOLDERS, viewModel.isShowHiddenFolders)
+        outState.putStringArrayList(STATE_EXPANDED_PATHS, ArrayList(expandedPaths))
+        outState.putString(STATE_SEARCH_QUERY, searchQuery)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -163,17 +202,19 @@ class ChooseFolderActivity : BaseActivity() {
         folderSearchView.queryHint = getString(R.string.folder_list_filter_hint)
         folderSearchView.setOnQueryTextListener(
             object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String): Boolean {
-                    itemAdapter.filter(query)
-                    return true
-                }
+                override fun onQueryTextSubmit(query: String): Boolean = true
 
                 override fun onQueryTextChange(newText: String): Boolean {
-                    itemAdapter.filter(newText)
+                    searchQuery = newText
+                    renderFolderList()
                     return true
                 }
             },
         )
+        if (searchQuery.isNotEmpty()) {
+            folderMenuItem.expandActionView()
+            folderSearchView.setQuery(searchQuery, false)
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -194,6 +235,29 @@ class ChooseFolderActivity : BaseActivity() {
         viewModel.setDisplayMode(accountId, enabled)
     }
 
+    /** Only an explicit destination action followed by confirmation can return a destination. */
+    private fun confirmDestination(item: FolderListItem) {
+        val folderId = item.databaseId ?: return
+        if (!item.canSelectDestination) return
+
+        val title = when (action) {
+            Action.MOVE -> R.string.choose_folder_move_title
+            Action.COPY -> R.string.choose_folder_copy_title
+            Action.CHOOSE -> R.string.choose_folder_title
+        }
+        val confirmButton = when (action) {
+            Action.MOVE -> R.string.choose_folder_confirm_move_action
+            Action.COPY -> R.string.choose_folder_confirm_copy_action
+            Action.CHOOSE -> R.string.choose_folder_confirm_choose_action
+        }
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(getString(R.string.choose_folder_confirm_destination, item.displayName))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(confirmButton) { _, _ -> returnResult(folderId, item.displayName) }
+            .show()
+    }
+
     private fun returnResult(folderId: Long, displayName: String) {
         val result = Intent().apply {
             putExtra(RESULT_SELECTED_FOLDER_ID, folderId)
@@ -203,17 +267,6 @@ class ChooseFolderActivity : BaseActivity() {
 
         setResult(Activity.RESULT_OK, result)
         finish()
-    }
-
-    private fun folderListFilter(item: FolderListItem, constraint: CharSequence?): Boolean {
-        if (constraint.isNullOrEmpty()) return true
-
-        val locale = Locale.getDefault()
-        val displayName = item.displayName.lowercase(locale)
-        return constraint.splitToSequence(" ")
-            .filter { it.isNotEmpty() }
-            .map { it.lowercase(locale) }
-            .any { it in displayName }
     }
 
     private fun Intent.getLongExtraOrNull(name: String): Long? {
@@ -238,6 +291,8 @@ class ChooseFolderActivity : BaseActivity() {
     companion object {
         private const val STATE_SCROLL_TO_FOLDER_ID = "scrollToFolderId"
         private const val STATE_SHOW_HIDDEN_FOLDERS = "showHiddenFolders"
+        private const val STATE_EXPANDED_PATHS = "expandedFolderPaths"
+        private const val STATE_SEARCH_QUERY = "folderSearchQuery"
         private const val EXTRA_ACCOUNT = "accountUuid"
         private const val EXTRA_CURRENT_FOLDER_ID = "currentFolderId"
         private const val EXTRA_SCROLL_TO_FOLDER_ID = "scrollToFolderId"

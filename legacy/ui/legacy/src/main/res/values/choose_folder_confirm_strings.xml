@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="choose_folder_select_here">Here</string>
+    <string name="choose_folder_confirm_destination">Use “%1$s” as the destination folder?</string>
+    <string name="choose_folder_confirm_move_action">Move</string>
+    <string name="choose_folder_confirm_copy_action">Copy</string>
+    <string name="choose_folder_confirm_choose_action">Select</string>
+</resources>
