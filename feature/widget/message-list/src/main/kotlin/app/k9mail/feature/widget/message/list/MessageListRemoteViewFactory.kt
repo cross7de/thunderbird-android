@@ -10,6 +10,8 @@ import android.widget.RemoteViews
 import android.widget.RemoteViewsService.RemoteViewsFactory
 import androidx.core.content.ContextCompat
 import com.fsck.k9.CoreResourceProvider
+import com.fsck.k9.widget.WidgetRowHeightSettings
+import kotlin.math.roundToInt
 import net.thunderbird.core.android.account.SortType
 import net.thunderbird.core.preference.GeneralSettingsManager
 import net.thunderbird.feature.search.legacy.LocalMessageSearch
@@ -72,6 +74,17 @@ internal class MessageListRemoteViewFactory(
         val remoteView = RemoteViews(context.packageName, R.layout.message_list_widget_list_item)
 
         val item = messageListItems[position]
+
+        val extraDp = WidgetRowHeightSettings.get(context) - WidgetRowHeightSettings.MIN_HEIGHT_DP
+        val density = context.resources.displayMetrics.density
+        val extraPx = (extraDp * density).roundToInt()
+        remoteView.setViewPadding(
+            R.id.mail_row_content,
+            (3 * density).roundToInt(),
+            extraPx / 2,
+            0,
+            extraPx - extraPx / 2,
+        )
 
         val displayName = if (item.isRead) item.displayName else bold(item.displayName)
         val subject = if (item.isRead) item.subject else bold(item.subject)

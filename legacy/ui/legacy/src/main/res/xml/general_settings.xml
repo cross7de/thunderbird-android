@@ -15,6 +15,18 @@
         search:ignore="true"
         >
 
+        <PreferenceScreen
+            android:key="widget_preferences"
+            android:title="@string/widget_settings_title"
+            >
+
+            <com.fsck.k9.ui.settings.general.WidgetRowHeightPreference
+                android:key="widget_row_height"
+                android:title="@string/widget_row_height_title"
+                />
+
+        </PreferenceScreen>
+
         <PreferenceCategory
             android:key="global_preferences"
             android:title="@string/global_preferences"

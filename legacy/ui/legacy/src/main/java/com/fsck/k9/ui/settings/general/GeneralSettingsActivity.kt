@@ -55,6 +55,15 @@ class GeneralSettingsActivity : BaseActivity(), OnPreferenceStartScreenCallback,
             fragmentTransaction {
                 add(R.id.generalSettingsContainer, GeneralSettingsFragment.create())
             }
+            if (intent.getBooleanExtra(EXTRA_WIDGET_SETTINGS, false)) {
+                // Keep the normal General and Display screens on the back stack.
+                fragmentTransactionWithBackStack {
+                    replace(R.id.generalSettingsContainer, GeneralSettingsFragment.create("display_preferences"))
+                }
+                fragmentTransactionWithBackStack {
+                    replace(R.id.generalSettingsContainer, GeneralSettingsFragment.create("widget_preferences"))
+                }
+            }
         } else {
             searchQuery = savedInstanceState.getString(KEY_SEARCH_QUERY, "")
             searchEnabled = savedInstanceState.getBoolean(KEY_SEARCH_ENABLED, false)
@@ -159,6 +168,15 @@ class GeneralSettingsActivity : BaseActivity(), OnPreferenceStartScreenCallback,
     companion object {
         private const val KEY_SEARCH_QUERY = "search_query"
         private const val KEY_SEARCH_ENABLED = "search_enabled"
+        private const val EXTRA_WIDGET_SETTINGS = "widget_settings"
+
+        fun widgetSettingsIntent(context: Context): Intent {
+            return Intent(context, GeneralSettingsActivity::class.java).apply {
+                putExtra(EXTRA_WIDGET_SETTINGS, true)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        }
+
         fun start(context: Context) {
             val intent = Intent(context, GeneralSettingsActivity::class.java)
             context.startActivity(intent)

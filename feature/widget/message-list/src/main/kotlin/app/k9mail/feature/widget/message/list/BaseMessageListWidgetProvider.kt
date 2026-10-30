@@ -16,6 +16,8 @@ import com.fsck.k9.activity.MessageCompose
 import com.fsck.k9.activity.MessageHomeActivity
 import com.fsck.k9.activity.MessageHomeActivity.Companion.intentDisplaySearch
 import com.fsck.k9.controller.MessagingControllerWrapper
+import com.fsck.k9.ui.settings.general.GeneralSettingsActivity
+import com.fsck.k9.widget.WidgetRowHeightSettings
 import net.thunderbird.feature.search.legacy.SearchAccount.Companion.createUnifiedInboxSearch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -29,6 +31,11 @@ abstract class BaseMessageListWidgetProvider : AppWidgetProvider(), KoinComponen
         when (intent.action) {
             MessageListWidgetActions.ACTION_SYNC, MessageListWidgetActions.ACTION_TOGGLE_DELETE -> {
                 handleHeaderClick(context, intent)
+            }
+            WidgetRowHeightSettings.ACTION_ROW_HEIGHT_CHANGED -> {
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(ComponentName(context, javaClass))
+                if (ids.isNotEmpty()) manager.notifyAppWidgetViewDataChanged(ids, R.id.listView)
             }
             else -> super.onReceive(context, intent)
         }
@@ -104,6 +111,16 @@ abstract class BaseMessageListWidgetProvider : AppWidgetProvider(), KoinComponen
 
         val composeAction = composeActionPendingIntent(context)
         views.setOnClickPendingIntent(R.id.new_message, composeAction)
+        views.setOnClickPendingIntent(
+            R.id.widget_settings,
+            PendingIntentCompat.getActivity(
+                context,
+                -2,
+                GeneralSettingsActivity.widgetSettingsIntent(context),
+                PendingIntent.FLAG_UPDATE_CURRENT,
+                false,
+            )!!,
+        )
 
         val headerClickAction = viewUnifiedFoldersPendingIntent(context)
         views.setOnClickPendingIntent(R.id.open_inbox, headerClickAction)
@@ -120,7 +137,6 @@ abstract class BaseMessageListWidgetProvider : AppWidgetProvider(), KoinComponen
             .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) >= EXTRA_ACTIONS_MIN_WIDTH_DP
         val visibility = if (showExtraActions) View.VISIBLE else View.GONE
         views.setViewVisibility(R.id.open_inbox, visibility)
-        views.setViewVisibility(R.id.extra_actions_spacer, visibility)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }

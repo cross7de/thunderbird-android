@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_settings_title">Widget</string>
+    <string name="widget_row_height_title">Message row height</string>
+    <string name="widget_row_height_value">%1$d dp</string>
+    <string name="widget_row_height_legend">Compact · Normal · Large · Extra large</string>
+    <string name="widget_row_height_reset">Reset to default (32 dp)</string>
+</resources>
