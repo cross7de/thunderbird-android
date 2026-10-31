@@ -144,6 +144,7 @@ class GeneralSettingsFragment : PreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         activity?.title = preferenceScreen.title
+        arguments?.getString(ARG_SCROLL_TO_PREFERENCE)?.let { scrollToPreference(it) }
 
         val menuHost = requireActivity()
         menuHost.addMenuProvider(
@@ -238,10 +239,13 @@ class GeneralSettingsFragment : PreferenceFragmentCompat() {
     companion object {
         private const val PREFERENCE_SCREEN_DEBUGGING = "debug_preferences"
         private const val PREFERENCE_DATA_COLLECTION = "data_collection"
+        private const val ARG_SCROLL_TO_PREFERENCE = "scroll_to_preference"
         const val DEFAULT_SYNC_FILENAME = "thunderbird-sync-logs"
 
-        fun create(rootKey: String? = null) = GeneralSettingsFragment().withArguments {
-            putString(ARG_PREFERENCE_ROOT, rootKey)
-        }
+        fun create(rootKey: String? = null, scrollToPreferenceKey: String? = null) =
+            GeneralSettingsFragment().withArguments {
+                putString(ARG_PREFERENCE_ROOT, rootKey)
+                putString(ARG_SCROLL_TO_PREFERENCE, scrollToPreferenceKey)
+            }
     }
 }

@@ -15,18 +15,6 @@
         search:ignore="true"
         >
 
-        <PreferenceScreen
-            android:key="widget_preferences"
-            android:title="@string/widget_settings_title"
-            >
-
-            <com.fsck.k9.ui.settings.general.WidgetRowHeightPreference
-                android:key="widget_row_height"
-                android:title="@string/widget_row_height_title"
-                />
-
-        </PreferenceScreen>
-
         <PreferenceCategory
             android:key="global_preferences"
             android:title="@string/global_preferences"
@@ -389,6 +377,18 @@
                 android:key="messageview_body_content_type"
                 app:useSimpleSummaryProvider="true"
                 android:title="@string/global_settings_messageview_body_content_type_title" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+            android:key="widget_preferences"
+            android:title="@string/widget_settings_title"
+            >
+
+            <com.fsck.k9.ui.settings.general.WidgetRowHeightPreference
+                android:key="widget_row_height"
+                android:title="@string/widget_row_height_title"
+                />
+
         </PreferenceCategory>
 
     </PreferenceScreen>

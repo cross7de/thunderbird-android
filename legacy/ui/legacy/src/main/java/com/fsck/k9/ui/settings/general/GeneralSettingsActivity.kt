@@ -56,12 +56,15 @@ class GeneralSettingsActivity : BaseActivity(), OnPreferenceStartScreenCallback,
                 add(R.id.generalSettingsContainer, GeneralSettingsFragment.create())
             }
             if (intent.getBooleanExtra(EXTRA_WIDGET_SETTINGS, false)) {
-                // Keep the normal General and Display screens on the back stack.
+                // Keep the normal General screen on the back stack.
                 fragmentTransactionWithBackStack {
-                    replace(R.id.generalSettingsContainer, GeneralSettingsFragment.create("display_preferences"))
-                }
-                fragmentTransactionWithBackStack {
-                    replace(R.id.generalSettingsContainer, GeneralSettingsFragment.create("widget_preferences"))
+                    replace(
+                        R.id.generalSettingsContainer,
+                        GeneralSettingsFragment.create(
+                            rootKey = "display_preferences",
+                            scrollToPreferenceKey = "widget_preferences",
+                        ),
+                    )
                 }
             }
         } else {
