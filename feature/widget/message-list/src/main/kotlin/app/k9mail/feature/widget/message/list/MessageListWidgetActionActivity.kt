@@ -49,5 +49,6 @@ class MessageListWidgetActionActivity : Activity(), KoinComponent {
         }
 
         controller.moveMessage(reference.accountId, reference.folderId, reference, trashId)
+        controller.cancelNotificationForMessage(reference.accountId, reference)
     }
 }

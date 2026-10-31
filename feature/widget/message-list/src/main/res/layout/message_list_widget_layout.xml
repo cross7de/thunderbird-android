@@ -76,6 +76,21 @@
             android:src="@android:drawable/ic_menu_delete"
             />
 
+        <!-- The active delete-mode icon remains visible even if the message list is empty. -->
+        <ImageButton
+            android:id="@+id/toggle_delete_active"
+            android:layout_width="0dp"
+            android:layout_height="28dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/message_list_widget_delete_mode_action"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_delete"
+            android:tint="@android:color/holo_red_light"
+            android:visibility="gone"
+            />
+
     </LinearLayout>
 
     <ListView

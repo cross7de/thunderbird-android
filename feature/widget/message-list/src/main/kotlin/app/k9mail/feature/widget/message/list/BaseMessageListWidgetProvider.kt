@@ -58,6 +58,7 @@ abstract class BaseMessageListWidgetProvider : AppWidgetProvider(), KoinComponen
             )
             MessageListWidgetActions.ACTION_TOGGLE_DELETE -> {
                 val enabled = MessageListWidgetActions.toggleDeleteMode(context, appWidgetId)
+                updateAppWidget(context, manager, appWidgetId)
                 manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.listView)
                 Toast.makeText(
                     context,
@@ -128,10 +129,15 @@ abstract class BaseMessageListWidgetProvider : AppWidgetProvider(), KoinComponen
             R.id.sync_mail,
             headerActionPendingIntent(context, appWidgetId, MessageListWidgetActions.ACTION_SYNC),
         )
-        views.setOnClickPendingIntent(
-            R.id.toggle_delete,
-            headerActionPendingIntent(context, appWidgetId, MessageListWidgetActions.ACTION_TOGGLE_DELETE),
+        val deleteAction = headerActionPendingIntent(
+            context, appWidgetId, MessageListWidgetActions.ACTION_TOGGLE_DELETE,
         )
+        views.setOnClickPendingIntent(R.id.toggle_delete, deleteAction)
+        views.setOnClickPendingIntent(R.id.toggle_delete_active, deleteAction)
+
+        val deleteMode = MessageListWidgetActions.isDeleteMode(context, appWidgetId)
+        views.setViewVisibility(R.id.toggle_delete, if (deleteMode) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.toggle_delete_active, if (deleteMode) View.VISIBLE else View.GONE)
 
         val showExtraActions = appWidgetManager.getAppWidgetOptions(appWidgetId)
             .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) >= EXTRA_ACTIONS_MIN_WIDTH_DP
